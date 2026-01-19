@@ -1,0 +1,223 @@
+*&---------------------------------------------------------------------*
+*& Report ZDEMO1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zdemo1.
+TABLES :mara.
+
+
+TYPES : BEGIN OF lty_mara,
+          matnr     TYPE matnr,
+          ersda     TYPE ersda,
+          ernam     TYPE ernam,
+          vpsta     TYPE vpsta,
+          matkl     TYPE matkl,
+          name      TYPE char30,
+          flag      TYPE char1,
+*          name_hndl TYPE int4,
+        END OF lty_mara.
+
+
+DATA: it_final TYPE TABLE OF lty_mara,
+      wa_final TYPE lty_mara,
+      count    TYPE i.
+
+DATA : lt_fieldcat TYPE lvc_t_fcat,
+       ls_fieldcat TYPE lvc_s_fcat.
+
+DATA : lo_object TYPE REF TO cl_gui_custom_container.
+DATA : lo_grid TYPE REF TO cl_gui_alv_grid.
+DATA :lt_dropdown TYPE lvc_t_drop .
+DATA :ls_dropdown TYPE lvc_s_drop.
+
+SELECT-OPTIONS : s_matnr FOR mara-matnr.
+
+CLASS lcl_event_receiver DEFINITION.
+  PUBLIC SECTION.
+    METHODS handle_data_changed
+      FOR EVENT data_changed OF cl_gui_alv_grid
+      IMPORTING er_data_changed.
+ENDCLASS.
+
+CLASS lcl_event_receiver IMPLEMENTATION.
+  METHOD handle_data_changed.
+
+IF lo_grid IS BOUND.
+CALL METHOD lo_grid->check_changed_data
+*  IMPORTING
+*    e_valid   =
+*  CHANGING
+*    c_refresh = 'X'
+    .
+
+endif.
+
+
+    DATA(ls_good) = er_data_changed->mt_good_cells.
+
+    CALL METHOD lo_grid->refresh_table_display
+      EXCEPTIONS
+        finished = 1
+        OTHERS   = 2.
+    IF sy-subrc <> 0.
+*    Implement suitable error handling here
+    ENDIF.
+
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+START-OF-SELECTION.
+
+  IF s_matnr IS NOT INITIAL .
+    SELECT matnr, ersda, ernam, vpsta, matkl
+    FROM mara
+    INTO CORRESPONDING FIELDS OF TABLE @it_final
+    WHERE matnr IN @s_matnr.
+
+  ENDIF.
+
+*  LOOP AT it_final ASSIGNING FIELD-SYMBOL(<fs>).
+*    <fs>-name_hndl = 1.
+*  ENDLOOP.
+
+
+  CLEAR : ls_fieldcat, lt_fieldcat[], count.
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'MATNR'.
+  ls_fieldcat-coltext = 'MATNR'.
+  ls_fieldcat-emphasize = 'c5'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'ERSDA'.
+  ls_fieldcat-coltext = 'ERSDA'.
+  ls_fieldcat-emphasize = 'C5'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'ERNAM'.
+  ls_fieldcat-coltext = 'ERNAM'.
+  ls_fieldcat-emphasize = 'c5'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'VPSTA'.
+  ls_fieldcat-coltext = 'VPSTA'.
+  ls_fieldcat-emphasize = 'c5'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'MATKL'.
+  ls_fieldcat-coltext = 'MATKL'.
+  ls_fieldcat-emphasize = 'c5'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'NAME'.
+  ls_fieldcat-coltext = 'NAME'.
+  ls_fieldcat-emphasize = 'c5'.
+  ls_fieldcat-edit = 'X'.
+  ls_fieldcat-drdn_hndl = '1'.
+  ls_fieldcat-drdn_field = 'NAME'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+  count = count + 1.
+  ls_fieldcat-col_pos = count.
+  ls_fieldcat-fieldname = 'FLAG'.
+  ls_fieldcat-coltext = 'FLAG'.
+  ls_fieldcat-edit = 'X'.
+  ls_fieldcat-checkbox = 'X'.
+  APPEND ls_fieldcat TO lt_fieldcat.
+  CLEAR ls_fieldcat.
+
+
+  CLEAR : ls_dropdown.
+  ls_dropdown-handle = '1'.
+  ls_dropdown-value = 'shivam'.
+  APPEND ls_dropdown TO lt_dropdown.
+
+  CLEAR : ls_dropdown.
+  ls_dropdown-handle = '1'.
+  ls_dropdown-value = 'shivam1'.
+  APPEND ls_dropdown TO lt_dropdown.
+
+  CREATE OBJECT lo_object
+    EXPORTING
+      container_name = 'CONT'.
+
+  CREATE OBJECT lo_grid
+    EXPORTING
+      i_parent = lo_object.
+
+
+  CALL METHOD lo_grid->set_table_for_first_display
+    CHANGING
+      it_outtab                     = it_final
+      it_fieldcatalog               = lt_fieldcat
+*     it_sort                       =
+*     it_filter                     =
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+*  DATA lo_event_receiver TYPE REF TO lcl_event_receiver.
+*  CREATE OBJECT lo_event_receiver.
+*  SET HANDLER lo_event_receiver->handle_data_changed FOR lo_grid.
+
+  CALL METHOD lo_grid->set_drop_down_table
+    EXPORTING
+      it_drop_down = lt_dropdown[].
+
+  CALL METHOD lo_grid->refresh_table_display.
+
+
+  CALL SCREEN '100'.
+
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  IF sy-ucomm = 'BACK' OR sy-ucomm = '%EX' OR sy-ucomm = 'RW' .
+    LEAVE TO SCREEN 0.
+  ENDIF.
+
+  IF sy-ucomm = 'SAVE'.
+    CALL METHOD lo_grid->check_changed_data.
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'PFSTATUS'.
+* SET TITLEBAR 'xxx'.
+ENDMODULE.
