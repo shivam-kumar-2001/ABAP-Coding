@@ -1,0 +1,12 @@
+* FOR Ranges table
+    RANGES: r_bwart FOR aufm-bwart.
+    CLEAR r_bwart.
+    REFRESH r_bwart.
+    r_bwart-sign = 'I'.
+    r_bwart-option = 'EQ'.
+    r_bwart-low = '101'.
+    APPEND r_bwart.
+    r_bwart-low = '102'.
+    APPEND r_bwart.
+
+
